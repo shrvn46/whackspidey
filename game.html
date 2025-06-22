@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Whack the Spiderman!!!</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=comico@400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --hole-size: min(24vw, 100px);
+      --main-color: #ff4757;
+      --bg-color: #111;
+      --hole-bg: #333;
+      --button-color: #1e90ff;
+    }
+
+    body {
+      font-family: 'Comico', cursive;
+      background: var(--bg-color);
+      color: var(--main-color);
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 10vmin;
+      margin-bottom: 10px;
+      color: #e84118;
+    }
+
+    .score-panel {
+      display: flex;
+      justify-content: space-around;
+      color: #fff;
+      font-size: 4vmin;
+      margin: 20px auto;
+      max-width: 500px;
+    }
+
+    .game-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(var(--hole-size), 1fr));
+      gap: 15px;
+      justify-content: center;
+      max-width: 500px;
+      margin: auto;
+    }
+
+    .hole {
+      width: var(--hole-size);
+      height: var(--hole-size);
+      background: var(--hole-bg);
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .spidey {
+      width: 100%;
+      height: 100%;
+      background-image: url('https://w7.pngwing.com/pngs/1008/703/png-transparent-spider-man-ben-parker-standee-marvel-comics-groot-spider-man-heroes-superhero-fictional-character-thumbnail.png');
+      background-size: cover;
+      background-position: center;
+      position: absolute;
+      bottom: -100%;
+      transition: bottom 0.4s ease-out;
+    }
+
+    .spidey.up {
+      bottom: 0;
+    }
+
+    button {
+      margin-top: 25px;
+      padding: 10px 20px;
+      font-size: 3vmin;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      background: var(--button-color);
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #0066cc;
+    }
+
+    @media (max-width: 480px) {
+      .game-board {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Whack the Spidey!</h1>
+  <div class="score-panel">
+    <div>⏱️ <span id="timer">60</span>s</div>
+    <div>🎯 Score: <span id="score">0</span></div>
+    <div>🏆 Best: <span id="best-score">0</span></div>
+  </div>
+
+  <div class="game-board" id="board"></div>
+  <button onclick="startGame()">Start Game</button>
+
+  <script>
+    const board = document.getElementById('board');
+    const scoreEl = document.getElementById('score');
+    const bestScoreEl = document.getElementById('best-score');
+    const timerEl = document.getElementById('timer');
+
+    let score = 0;
+    let best = localStorage.getItem('bestSpidey') || 0;
+    let lastHole, gameTime = 60, timeUp = false, timer;
+    bestScoreEl.textContent = best;
+
+    // Create holes with Spidey
+    for (let i = 0; i < 12; i++) {
+      const hole = document.createElement('div');
+      hole.classList.add('hole');
+      const spidey = document.createElement('div');
+      spidey.classList.add('spidey');
+      spidey.addEventListener('click', whackSpidey);
+      hole.appendChild(spidey);
+      board.appendChild(hole);
+    }
+
+    function randomTime(min, max) {
+      return Math.round(Math.random() * (max - min) + min);
+    }
+
+    function randomHole() {
+      const holes = document.querySelectorAll('.hole');
+      const idx = Math.floor(Math.random() * holes.length);
+      const hole = holes[idx];
+      if (hole === lastHole) return randomHole();
+      lastHole = hole;
+      return hole;
+    }
+
+    function showSpidey() {
+      const time = randomTime(400, 900);
+      const hole = randomHole();
+      const spidey = hole.querySelector('.spidey');
+      spidey.classList.add('up');
+      setTimeout(() => {
+        spidey.classList.remove('up');
+        if (!timeUp) showSpidey();
+      }, time);
+    }
+
+    function startGame() {
+      score = 0;
+      gameTime = 60;
+      timeUp = false;
+      scoreEl.textContent = score;
+      timerEl.textContent = gameTime;
+      showSpidey();
+
+      clearInterval(timer);
+      timer = setInterval(() => {
+        gameTime--;
+        timerEl.textContent = gameTime;
+        if (gameTime <= 0) {
+          clearInterval(timer);
+          timeUp = true;
+          if (score > best) {
+            best = score;
+            localStorage.setItem('bestSpidey', best);
+            bestScoreEl.textContent = best;
+          }
+        }
+      }, 1000);
+    }
+
+    function whackSpidey(e) {
+      if (!e.isTrusted || timeUp) return;
+      score++;
+      this.classList.remove('up');
+      scoreEl.textContent = score;
+
+      // Optional: Add sound effect
+      // new Audio('whack.mp3').play();
+    }
+  </script>
+</body>
+</html>
